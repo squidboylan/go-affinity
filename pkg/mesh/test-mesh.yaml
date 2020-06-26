@@ -1,0 +1,14 @@
+nodes:
+  controller:
+    connections: []
+    listen: 127.0.0.1:8899
+    name: controller
+    stats_enable: true
+    stats_port: null
+  node1:
+    connections:
+      - controller
+    listen: 127.0.0.1:11121
+    name: node1
+    stats_enable: true
+    stats_port: null
