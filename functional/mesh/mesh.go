@@ -2,7 +2,7 @@ package mesh
 
 import (
 	"fmt"
-	"github.com/squidboylan/go-affinity/pkg/utils"
+	"github.com/squidboylan/go-affinity/functional/utils"
 	"github.com/project-receptor/receptor/pkg/backends"
 	"github.com/project-receptor/receptor/pkg/netceptor"
 	"io/ioutil"
