@@ -3,8 +3,8 @@ package mesh
 import (
 	"fmt"
 	"github.com/squidboylan/go-affinity/pkg/utils"
-	"github.com/ghjm/sockceptor/pkg/backends"
-	"github.com/ghjm/sockceptor/pkg/netceptor"
+	"github.com/project-receptor/receptor/pkg/backends"
+	"github.com/project-receptor/receptor/pkg/netceptor"
 	"io/ioutil"
 	"net"
 	"os"

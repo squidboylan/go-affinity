@@ -1,8 +1,8 @@
 package mesh
 
 import (
-	_ "github.com/ghjm/sockceptor/pkg/backends"
-	_ "github.com/ghjm/sockceptor/pkg/netceptor"
+	_ "github.com/project-receptor/receptor/pkg/backends"
+	_ "github.com/project-receptor/receptor/pkg/netceptor"
 	_ "io"
 	_ "net"
 	_ "os"
