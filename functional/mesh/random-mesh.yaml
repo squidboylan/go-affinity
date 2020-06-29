@@ -8,92 +8,92 @@ nodes:
     stats_port: null
   node1:
     connections:
-      - controller
+      controller: 1
     listen: null
     name: node1
     stats_enable: true
     stats_port: null
   node10:
     connections:
-      - node12
-      - node4
+      node12: 1
+      node4: 1
     listen: null
     name: node10
     stats_enable: true
     stats_port: null
   node11:
     connections:
-      - node1
+      node1: 1
     listen: null
     name: node11
     stats_enable: true
     stats_port: null
   node12:
     connections:
-      - node11
-      - controller
+      node11: 1
+      controller: 1
     listen: null
     name: node12
     stats_enable: true
     stats_port: null
   node2:
     connections:
-      - node1
+      node1: 1
     listen: null
     name: node2
     stats_enable: true
     stats_port: null
   node3:
     connections:
-      - node6
-      - node4
+      node6: 1
+      node4: 1
     listen: null
     name: node3
     stats_enable: true
     stats_port: null
   node4:
     connections:
-      - node7
-      - node2
+      node7: 1
+      node2: 1
     listen: null
     name: node4
     stats_enable: true
     stats_port: null
   node5:
     connections:
-      - node8
-      - node12
+      node8: 1
+      node12: 1
     listen: null
     name: node5
     stats_enable: true
     stats_port: null
   node6:
     connections:
-      - node10
-      - node3
+      node10: 1
+      node3: 1
     listen: null
     name: node6
     stats_enable: true
     stats_port: null
   node7:
     connections:
-      - node3
-      - node1
+      node3: 1
+      node1: 1
     listen: null
     name: node7
     stats_enable: true
     stats_port: null
   node8:
     connections:
-      - node1
+      node1: 1
     listen: null
     name: node8
     stats_enable: true
     stats_port: null
   node9:
     connections:
-      - node10
-      - node5
+      node10: 1
+      node5: 1
     listen: null
     name: node9
     stats_enable: true

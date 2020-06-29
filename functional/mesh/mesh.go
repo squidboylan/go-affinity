@@ -20,12 +20,11 @@ type Node struct {
 
 type Mesh struct {
 	Nodes map[string]Node
-	Connections map[string]string
 }
 
 type YamlData struct {
 	Nodes map[string] *struct {
-		Connections []string
+		Connections map[string]float64
 		Listen string
 		Name string
 		Stats_enable bool
@@ -48,21 +47,21 @@ func NewNode(name string) Node {
 	}
 }
 
-func (n *Node) TCPListen(address string) error {
+func (n *Node) TCPListen(address string, cost float64) error {
 	b1, err := backends.NewTCPListener(address, nil)
 	if err != nil {
 		return err
 	}
-	n.NetceptorInstance.RunBackend(b1, 1.0, handleError)
+	n.NetceptorInstance.RunBackend(b1, cost, handleError)
 	return err
 }
 
-func (n *Node) TCPDial(address string) error {
+func (n *Node) TCPDial(address string, cost float64) error {
 	b1, err := backends.NewTCPDialer(address, true, nil)
 	if err != nil {
 		return err
 	}
-	n.NetceptorInstance.RunBackend(b1, 1.0, handleError)
+	n.NetceptorInstance.RunBackend(b1, cost, handleError)
 	return err
 }
 
@@ -91,7 +90,6 @@ func (n *Node) ServiceDial(node string, servicename string, timeout int, functio
 
 func NewMeshFromFile(filename string) Mesh {
 	Nodes := make(map[string]Node)
-	Connections := make(map[string]string)
 
 	yamlDat, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -106,7 +104,7 @@ func NewMeshFromFile(filename string) Mesh {
 	for k := range data.Nodes {
 		node := NewNode(data.Nodes[k].Name)
 		if data.Nodes[k].Listen != "" {
-			err := node.TCPListen(data.Nodes[k].Listen)
+			err := node.TCPListen(data.Nodes[k].Listen, 1.0)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -117,7 +115,7 @@ func NewMeshFromFile(filename string) Mesh {
 			for retries > 0 {
 				port := utils.RandomPort()
 				addrString := "127.0.0.1:" + strconv.Itoa(port)
-				err := node.TCPListen(addrString)
+				err := node.TCPListen(addrString, 1.0)
 				if err == nil {
 					data.Nodes[k].Listen = addrString
 					break
@@ -133,14 +131,12 @@ func NewMeshFromFile(filename string) Mesh {
 	}
 	for k := range data.Nodes {
 		node := Nodes[data.Nodes[k].Name]
-		for _, conn := range data.Nodes[k].Connections {
-			node.TCPDial(data.Nodes[conn].Listen)
-			Connections[data.Nodes[k].Name] = conn
+		for conn, cost := range data.Nodes[k].Connections {
+			node.TCPDial(data.Nodes[conn].Listen, cost)
 		}
 	}
 	return Mesh {
 		Nodes,
-		Connections,
 	}
 }
 
