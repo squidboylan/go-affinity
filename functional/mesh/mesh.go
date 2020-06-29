@@ -15,12 +15,12 @@ import (
 )
 
 type Node struct {
-	netceptorInstance *netceptor.Netceptor
+	NetceptorInstance *netceptor.Netceptor
 }
 
 type Mesh struct {
-	nodes map[string]Node
-	connections map[string]string
+	Nodes map[string]Node
+	Connections map[string]string
 }
 
 type YamlData struct {
@@ -44,7 +44,7 @@ func handleError(err error, fatal bool) {
 func NewNode(name string) Node {
 	n1 := netceptor.New(name, nil)
 	return Node {
-		netceptorInstance: n1,
+		NetceptorInstance: n1,
 	}
 }
 
@@ -53,7 +53,7 @@ func (n *Node) TCPListen(address string) error {
 	if err != nil {
 		return err
 	}
-	n.netceptorInstance.RunBackend(b1, 1.0, handleError)
+	n.NetceptorInstance.RunBackend(b1, 1.0, handleError)
 	return err
 }
 
@@ -62,12 +62,12 @@ func (n *Node) TCPDial(address string) error {
 	if err != nil {
 		return err
 	}
-	n.netceptorInstance.RunBackend(b1, 1.0, handleError)
+	n.NetceptorInstance.RunBackend(b1, 1.0, handleError)
 	return err
 }
 
 func (n *Node) ServiceListen(name string, function func(*netceptor.Listener)) (*netceptor.Listener, error) {
-	l1, err := n.netceptorInstance.Listen(name, nil)
+	l1, err := n.NetceptorInstance.Listen(name, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (n *Node) ServiceListen(name string, function func(*netceptor.Listener)) (*
 func (n *Node) ServiceDial(node string, servicename string, timeout int, function func()) (net.Conn, error) {
 	for timeout > 0 {
 		fmt.Printf("Dialing node1\n")
-		c2, err := n.netceptorInstance.Dial("node1", "echo", nil)
+		c2, err := n.NetceptorInstance.Dial("node1", "echo", nil)
 		if err != nil {
 			fmt.Printf("Error dialing on Receptor network: %s\n", err)
 			time.Sleep(1 * time.Second)
@@ -90,8 +90,8 @@ func (n *Node) ServiceDial(node string, servicename string, timeout int, functio
 }
 
 func NewMeshFromFile(filename string) Mesh {
-	nodes := make(map[string]Node)
-	connections := make(map[string]string)
+	Nodes := make(map[string]Node)
+	Connections := make(map[string]string)
 
 	yamlDat, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -106,7 +106,6 @@ func NewMeshFromFile(filename string) Mesh {
 	for k := range data.Nodes {
 		node := NewNode(data.Nodes[k].Name)
 		if data.Nodes[k].Listen != "" {
-			fmt.Println(data.Nodes[k].Listen)
 			err := node.TCPListen(data.Nodes[k].Listen)
 			if err != nil {
 				fmt.Println(err)
@@ -118,7 +117,6 @@ func NewMeshFromFile(filename string) Mesh {
 			for retries > 0 {
 				port := utils.RandomPort()
 				addrString := "127.0.0.1:" + strconv.Itoa(port)
-				fmt.Println(addrString)
 				err := node.TCPListen(addrString)
 				if err == nil {
 					data.Nodes[k].Listen = addrString
@@ -131,27 +129,33 @@ func NewMeshFromFile(filename string) Mesh {
 				os.Exit(1)
 			}
 		}
-		nodes[data.Nodes[k].Name] = node
+		Nodes[data.Nodes[k].Name] = node
 	}
 	for k := range data.Nodes {
-		node := nodes[data.Nodes[k].Name]
+		node := Nodes[data.Nodes[k].Name]
 		for _, conn := range data.Nodes[k].Connections {
-			fmt.Println("data.Nodes[k].Name: " + data.Nodes[k].Name + " data.Nodes[k].Listen: " + data.Nodes[k].Listen)
-
 			node.TCPDial(data.Nodes[conn].Listen)
-			connections[data.Nodes[k].Name] = conn
+			Connections[data.Nodes[k].Name] = conn
 		}
 	}
 	return Mesh {
-		nodes,
-		connections,
+		Nodes,
+		Connections,
 	}
 }
 
 // This is broken and causes the thread to hang, dont use until
 // netceptor.Shutdown is fixed
 func (m *Mesh)Shutdown() {
-	for _, node := range m.nodes {
-		node.netceptorInstance.Shutdown()
+	for _, node := range m.Nodes {
+		node.NetceptorInstance.Shutdown()
 	}
+}
+
+func (m *Mesh)Status() []netceptor.Status {
+	out := []netceptor.Status{}
+	for _, node := range m.Nodes {
+		out = append(out, node.NetceptorInstance.Status())
+	}
+	return out
 }
