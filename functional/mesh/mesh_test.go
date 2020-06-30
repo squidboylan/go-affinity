@@ -21,6 +21,7 @@ func TestNode(t *testing.T) {
 		{"random-mesh.yaml"},
 		{"flat-mesh.yaml"},
 	}
+	t.Parallel()
 	for _, data := range testTable {
 		filename := data.filename
 		t.Run(filename, func(t *testing.T) {
@@ -45,6 +46,7 @@ func TestLoadFromFile(t *testing.T) {
 		{"random-mesh.yaml"},
 		{"flat-mesh.yaml"},
 	}
+	t.Parallel()
 	for _, data := range testTable {
 		filename := data.filename
 		t.Run(filename, func(t *testing.T) {
