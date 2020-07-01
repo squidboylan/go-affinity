@@ -8,10 +8,12 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"reflect"
 	_ "sync"
 	"time"
 	"gopkg.in/yaml.v2"
 	"strconv"
+	"errors"
 )
 
 type Node struct {
@@ -20,6 +22,7 @@ type Node struct {
 
 type Mesh struct {
 	Nodes map[string]Node
+	MeshDefinition YamlData
 }
 
 type YamlData struct {
@@ -97,14 +100,14 @@ func NewMeshFromFile(filename string) Mesh {
 		os.Exit(1)
 	}
 
-	data := YamlData {}
+	MeshDefinition := YamlData {}
 
-	yaml.Unmarshal(yamlDat, &data)
+	yaml.Unmarshal(yamlDat, &MeshDefinition)
 
-	for k := range data.Nodes {
-		node := NewNode(data.Nodes[k].Name)
-		if data.Nodes[k].Listen != "" {
-			err := node.TCPListen(data.Nodes[k].Listen, 1.0)
+	for k := range MeshDefinition.Nodes {
+		node := NewNode(MeshDefinition.Nodes[k].Name)
+		if MeshDefinition.Nodes[k].Listen != "" {
+			err := node.TCPListen(MeshDefinition.Nodes[k].Listen, 1.0)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -117,7 +120,7 @@ func NewMeshFromFile(filename string) Mesh {
 				addrString := "127.0.0.1:" + strconv.Itoa(port)
 				err := node.TCPListen(addrString, 1.0)
 				if err == nil {
-					data.Nodes[k].Listen = addrString
+					MeshDefinition.Nodes[k].Listen = addrString
 					break
 				}
 				retries -= 1
@@ -127,16 +130,17 @@ func NewMeshFromFile(filename string) Mesh {
 				os.Exit(1)
 			}
 		}
-		Nodes[data.Nodes[k].Name] = node
+		Nodes[MeshDefinition.Nodes[k].Name] = node
 	}
-	for k := range data.Nodes {
-		node := Nodes[data.Nodes[k].Name]
-		for conn, cost := range data.Nodes[k].Connections {
-			node.TCPDial(data.Nodes[conn].Listen, cost)
+	for k := range MeshDefinition.Nodes {
+		node := Nodes[MeshDefinition.Nodes[k].Name]
+		for conn, cost := range MeshDefinition.Nodes[k].Connections {
+			node.TCPDial(MeshDefinition.Nodes[conn].Listen, cost)
 		}
 	}
 	return Mesh {
 		Nodes,
+		MeshDefinition,
 	}
 }
 
@@ -146,6 +150,45 @@ func (m *Mesh)Shutdown() {
 	for _, node := range m.Nodes {
 		node.NetceptorInstance.Shutdown()
 	}
+}
+
+func (m *Mesh)CheckConnections() bool {
+	for _, status := range m.Status() {
+		actualConnections := map[string]float64{}
+		for _, connection := range status.Connections {
+			actualConnections[connection.NodeID] = connection.Cost
+		}
+		expectedConnections := map[string]float64{}
+		for k, v := range m.MeshDefinition.Nodes[status.NodeID].Connections {
+			expectedConnections[k] = v
+		}
+		for nodeID, node := range m.MeshDefinition.Nodes {
+			if nodeID == status.NodeID {
+				continue
+			}
+			for k, v := range node.Connections {
+				if k == status.NodeID {
+					expectedConnections[nodeID] = v
+				}
+			}
+		}
+		if reflect.DeepEqual(actualConnections, expectedConnections) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Mesh)WaitForReady(timeout float64) error {
+	connectionsReady := false
+	for ;timeout > 0 && !connectionsReady; connectionsReady = m.CheckConnections() {
+		time.Sleep(200 * time.Millisecond)
+		timeout -= 200
+	}
+	if connectionsReady == false {
+		return errors.New("Timed out while waiting for connections")
+	}
+	return nil
 }
 
 func (m *Mesh)Status() []netceptor.Status {

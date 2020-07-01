@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"time"
 	"testing"
-	"reflect"
+	_ "reflect"
 )
 
 func TestNode(t *testing.T) {
@@ -29,7 +29,8 @@ func TestNode(t *testing.T) {
 			mesh := NewMeshFromFile(filename)
 			// We need to sleep for a bit so everything can advertise routes
 			// and the routing table can settle
-			time.Sleep(5 * time.Second)
+			//time.Sleep(1 * time.Second)
+			mesh.WaitForReady(1000)
 			for _, status := range mesh.Status() {
 				t.Log(status.NodeID)
 				t.Log(status.RoutingTable)
@@ -62,29 +63,14 @@ func TestLoadFromFile(t *testing.T) {
 
 			yaml.Unmarshal(yamlDat, &data)
 			// We need to sleep for a bit so connections can happen
-			time.Sleep(5 * time.Second)
-			for _, status := range mesh.Status() {
-				actualConnections := map[string]float64{}
-				for _, connection := range status.Connections {
-					actualConnections[connection.NodeID] = connection.Cost
-				}
-				expectedConnections := map[string]float64{}
-				for k, v := range data.Nodes[status.NodeID].Connections {
-					expectedConnections[k] = v
-				}
-				for nodeID, node := range data.Nodes {
-					if nodeID == status.NodeID {
-						continue
-					}
-					for k, v := range node.Connections {
-						if k == status.NodeID {
-							expectedConnections[nodeID] = v
-						}
-					}
-				}
-				if !reflect.DeepEqual(actualConnections, expectedConnections) {
-					t.Error("Expected connections did not match actual connections for node: " + status.NodeID)
-				}
+			timeout := 1000
+			connectionsReady := false
+			for ;timeout > 0 && !connectionsReady; connectionsReady = mesh.CheckConnections() {
+				time.Sleep(200 * time.Millisecond)
+				timeout -= 200
+			}
+			if connectionsReady == false {
+				t.Error("Timed out while waiting for connections")
 			}
 		})
 	}
