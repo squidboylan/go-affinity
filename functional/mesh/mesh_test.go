@@ -27,13 +27,9 @@ func TestNode(t *testing.T) {
 		t.Run(filename, func(t *testing.T) {
 			t.Parallel()
 			mesh := NewMeshFromFile(filename)
-			// We need to sleep for a bit so everything can advertise routes
-			// and the routing table can settle
-			//time.Sleep(1 * time.Second)
-			mesh.WaitForReady(1000)
-			for _, status := range mesh.Status() {
-				t.Log(status.NodeID)
-				t.Log(status.RoutingTable)
+			err := mesh.WaitForReady(10000)
+			if err != nil {
+				t.Error(err)
 			}
 		})
 	}
