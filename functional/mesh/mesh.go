@@ -179,6 +179,22 @@ func (m *Mesh)CheckConnections() bool {
 	return false
 }
 
+func (m *Mesh)CheckKnownConnectionCosts() bool {
+	meshStatus := m.Status()
+	// If the mesh is empty we are done
+	if len(meshStatus) == 0 {
+		return true
+	}
+
+	knownConnectionCosts := meshStatus[0].KnownConnectionCosts
+	for _, status := range m.Status() {
+		if !reflect.DeepEqual(status.KnownConnectionCosts, knownConnectionCosts) {
+			return false
+		}
+	}
+	return true
+}
+
 func (m *Mesh)WaitForReady(timeout float64) error {
 	connectionsReady := false
 	for ;timeout > 0 && !connectionsReady; connectionsReady = m.CheckConnections() {
@@ -188,6 +204,17 @@ func (m *Mesh)WaitForReady(timeout float64) error {
 	if connectionsReady == false {
 		return errors.New("Timed out while waiting for connections")
 	}
+
+	routesReady := false
+
+	for ;timeout > 0 && !routesReady; routesReady = m.CheckKnownConnectionCosts() {
+		time.Sleep(200 * time.Millisecond)
+		timeout -= 200
+	}
+	if routesReady == false {
+		return errors.New("Timed out while waiting for routes to settle")
+	}
+
 	return nil
 }
 
