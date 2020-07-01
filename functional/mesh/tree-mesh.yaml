@@ -85,7 +85,7 @@ nodes:
     stats_port: null
   node9:
     connections:
-      node9: 1
+      controller: 1
     listen: null
     name: node9
     stats_enable: true
