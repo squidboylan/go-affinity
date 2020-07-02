@@ -196,7 +196,7 @@ func (m *Mesh)CheckKnownConnectionCosts() bool {
 }
 
 func (m *Mesh)WaitForReady(timeout float64) error {
-	connectionsReady := false
+	connectionsReady := m.CheckConnections()
 	for ;timeout > 0 && !connectionsReady; connectionsReady = m.CheckConnections() {
 		time.Sleep(200 * time.Millisecond)
 		timeout -= 200
@@ -205,8 +205,7 @@ func (m *Mesh)WaitForReady(timeout float64) error {
 		return errors.New("Timed out while waiting for connections")
 	}
 
-	routesReady := false
-
+	routesReady := m.CheckKnownConnectionCosts()
 	for ;timeout > 0 && !routesReady; routesReady = m.CheckKnownConnectionCosts() {
 		time.Sleep(200 * time.Millisecond)
 		timeout -= 200
