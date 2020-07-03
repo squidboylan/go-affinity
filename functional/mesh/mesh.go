@@ -22,17 +22,19 @@ type Node struct {
 
 type Mesh struct {
 	Nodes map[string]Node
-	MeshDefinition YamlData
+	MeshDefinition *YamlData
+}
+
+type YamlNode struct {
+	Connections map[string]float64
+	Listen string
+	Name string
+	Stats_enable bool
+	Stats_port string
 }
 
 type YamlData struct {
-	Nodes map[string] *struct {
-		Connections map[string]float64
-		Listen string
-		Name string
-		Stats_enable bool
-		Stats_port string
-	}
+	Nodes map[string]*YamlNode
 }
 
 // Error handler that gets called for backend errors
@@ -92,8 +94,6 @@ func (n *Node) ServiceDial(node string, servicename string, timeout int, functio
 }
 
 func NewMeshFromFile(filename string) Mesh {
-	Nodes := make(map[string]Node)
-
 	yamlDat, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("failed to read %s", filename)
@@ -103,6 +103,12 @@ func NewMeshFromFile(filename string) Mesh {
 	MeshDefinition := YamlData {}
 
 	yaml.Unmarshal(yamlDat, &MeshDefinition)
+
+	return NewMeshFromYaml(&MeshDefinition)
+}
+
+func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
+	Nodes := make(map[string]Node)
 
 	for k := range MeshDefinition.Nodes {
 		node := NewNode(MeshDefinition.Nodes[k].Name)
@@ -198,8 +204,8 @@ func (m *Mesh)CheckKnownConnectionCosts() bool {
 func (m *Mesh)WaitForReady(timeout float64) error {
 	connectionsReady := m.CheckConnections()
 	for ;timeout > 0 && !connectionsReady; connectionsReady = m.CheckConnections() {
-		time.Sleep(200 * time.Millisecond)
-		timeout -= 200
+		time.Sleep(100 * time.Millisecond)
+		timeout -= 100
 	}
 	if connectionsReady == false {
 		return errors.New("Timed out while waiting for connections")
@@ -207,8 +213,8 @@ func (m *Mesh)WaitForReady(timeout float64) error {
 
 	routesReady := m.CheckKnownConnectionCosts()
 	for ;timeout > 0 && !routesReady; routesReady = m.CheckKnownConnectionCosts() {
-		time.Sleep(200 * time.Millisecond)
-		timeout -= 200
+		time.Sleep(100 * time.Millisecond)
+		timeout -= 100
 	}
 	if routesReady == false {
 		return errors.New("Timed out while waiting for routes to settle")
