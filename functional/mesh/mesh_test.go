@@ -4,8 +4,6 @@ import (
 	_ "github.com/project-receptor/receptor/pkg/backends"
 	_ "github.com/project-receptor/receptor/pkg/netceptor"
 	"io/ioutil"
-	"fmt"
-	"os"
 	_ "sync"
 	"gopkg.in/yaml.v2"
 	"time"
@@ -29,8 +27,11 @@ func TestNode(t *testing.T) {
 		filename := data.filename
 		t.Run(filename, func(t *testing.T) {
 			t.Parallel()
-			mesh := NewMeshFromFile(filename)
-			err := mesh.WaitForReady(10000)
+			mesh, err := NewMeshFromFile(filename)
+			if err != nil {
+				t.Error(err)
+			}
+			err = mesh.WaitForReady(10000)
 			if err != nil {
 				t.Error(err)
 			}
@@ -54,11 +55,13 @@ func TestLoadFromFile(t *testing.T) {
 		filename := data.filename
 		t.Run(filename, func(t *testing.T) {
 			t.Parallel()
-			mesh := NewMeshFromFile(filename)
+			mesh, err := NewMeshFromFile(filename)
+			if err != nil {
+				t.Error(err)
+			}
 			yamlDat, err := ioutil.ReadFile(filename)
 			if err != nil {
-				fmt.Printf("failed to read %s", filename)
-				os.Exit(1)
+				t.Error(err)
 			}
 
 			data := YamlData {}
@@ -118,8 +121,11 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 			}
 		}
 		b.StartTimer()
-		mesh := NewMeshFromYaml(&data)
-		err := mesh.WaitForReady(10000)
+		mesh, err := NewMeshFromYaml(&data)
+		if err != nil {
+			b.Error(err)
+		}
+		err = mesh.WaitForReady(10000)
 		if err != nil {
 			b.Error(err)
 		}

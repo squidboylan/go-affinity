@@ -117,25 +117,23 @@ func (n *Node) ServiceDial(node string, servicename string, timeout int, functio
 	return nil, fmt.Errorf("Timed out connecting to %s", node)
 }
 
-func NewMeshFromFile(filename string) Mesh {
+func NewMeshFromFile(filename string) (*Mesh, error) {
 	yamlDat, err := ioutil.ReadFile(filename)
 	if err != nil {
-		fmt.Printf("failed to read %s", filename)
-		os.Exit(1)
+		return nil, err
 	}
 
 	MeshDefinition := YamlData {}
 
 	err = yaml.Unmarshal(yamlDat, &MeshDefinition)
 	if err != nil {
-		fmt.Printf("%s", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	return NewMeshFromYaml(&MeshDefinition)
 }
 
-func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
+func NewMeshFromYaml(MeshDefinition *YamlData) (*Mesh, error) {
 	Nodes := make(map[string]Node)
 
 	for k := range MeshDefinition.Nodes {
@@ -145,19 +143,17 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 				if listener.Protocol == "tcp" {
 					err := node.TCPListen(listener.Addr, 1.0)
 					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
+						return nil, err
 					}
 				} else if listener.Protocol == "udp" {
 					err := node.UDPListen(listener.Addr, 1.0)
 					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
+						return nil, err
 					}
 				}
 			} else {
+				retries := 5
 				if listener.Protocol == "tcp" {
-					retries := 5
 					for retries > 0 {
 						port := utils.RandomTCPPort()
 						addrString := "127.0.0.1:" + strconv.Itoa(port)
@@ -168,12 +164,7 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 						}
 						retries -= 1
 					}
-					if retries == 0 {
-						fmt.Println("Failed to conenct to a port after trying 5 times")
-						os.Exit(1)
-					}
 				} else if listener.Protocol == "udp" {
-					retries := 5
 					for retries > 0 {
 						port := utils.RandomUDPPort()
 						addrString := "127.0.0.1:" + strconv.Itoa(port)
@@ -184,10 +175,9 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 						}
 						retries -= 1
 					}
-					if retries == 0 {
-						fmt.Println("Failed to conenct to a port after trying 5 times")
-						os.Exit(1)
-					}
+				}
+				if retries == 0 {
+					return nil, fmt.Errorf("Failed to connect to %s://%s after trying 5 times", listener.Protocol, listener.Addr)
 				}
 			}
 		}
@@ -204,10 +194,10 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 			}
 		}
 	}
-	return Mesh {
+	return &Mesh {
 		Nodes,
 		MeshDefinition,
-	}
+	}, nil
 }
 
 // This is broken and causes the thread to hang, dont use until
