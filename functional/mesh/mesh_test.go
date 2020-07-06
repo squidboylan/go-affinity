@@ -13,7 +13,7 @@ import (
 
 // Test that a mesh starts and that connections are what we expect and that
 // each node's view of the mesh converges
-func TestNode(t *testing.T) {
+func TestMeshStartup(t *testing.T) {
 	testTable := []struct {
 		filename string
 	} {
@@ -42,7 +42,7 @@ func TestNode(t *testing.T) {
 }
 
 // Test that a mesh starts and that connections are what we expect
-func TestLoadFromFile(t *testing.T) {
+func TestMeshConnections(t *testing.T) {
 	testTable := []struct {
 		filename string
 	} {
