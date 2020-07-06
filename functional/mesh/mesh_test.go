@@ -82,9 +82,8 @@ func TestMeshConnections(t *testing.T) {
 	}
 }
 
-func BenchmarkLinearMeshStartup(b *testing.B) {
+func benchmarkLinearMeshStartup(totalNodes int, b *testing.B) {
 	// Setup our mesh yaml data
-	totalNodes := 100
 	data := YamlData {}
 	data.Nodes = make(map[string]*YamlNode)
 
@@ -136,4 +135,12 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 			b.Error(err)
 		}
 	}
+}
+
+func BenchmarkLinearMeshStartup100(b *testing.B) {
+	benchmarkLinearMeshStartup(100, b)
+}
+
+func BenchmarkLinearMeshStartup10(b *testing.B) {
+	benchmarkLinearMeshStartup(10, b)
 }
