@@ -16,6 +16,7 @@ import (
 	"errors"
 )
 
+// This layer of abstraction might be unnecessary
 type Node struct {
 	NetceptorInstance *netceptor.Netceptor
 }
@@ -117,6 +118,8 @@ func (n *Node) ServiceDial(node string, servicename string, timeout int, functio
 	return nil, fmt.Errorf("Timed out connecting to %s", node)
 }
 
+// Takes a filename to a yaml mesh description and returns a mesh of nodes
+// listening and dialing as defined in the yaml
 func NewMeshFromFile(filename string) (*Mesh, error) {
 	yamlDat, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -133,9 +136,14 @@ func NewMeshFromFile(filename string) (*Mesh, error) {
 	return NewMeshFromYaml(&MeshDefinition)
 }
 
+// Takes a yaml mesh description and returns a mesh of nodes
+// listening and dialing as defined in the yaml
+// TODO: Add support for websockets
 func NewMeshFromYaml(MeshDefinition *YamlData) (*Mesh, error) {
 	Nodes := make(map[string]Node)
 
+	// We must start listening on all our nodes before we start dialing so
+	// there's something to dial into
 	for k := range MeshDefinition.Nodes {
 		node := NewNode(MeshDefinition.Nodes[k].Name)
 		for _, listener := range MeshDefinition.Nodes[k].Listen {
@@ -214,6 +222,8 @@ func (m *Mesh)Shutdown() {
 	}
 }
 
+// Returns true if the connections defined in our mesh definition are
+// consistent with the connections made by the nodes
 func (m *Mesh)CheckConnections() bool {
 	for _, status := range m.Status() {
 		actualConnections := map[string]float64{}
@@ -241,6 +251,8 @@ func (m *Mesh)CheckConnections() bool {
 	return false
 }
 
+// Returns true if every node has the same view of the connections in the mesh,
+// if they do, we can assume the routing is consistent across all nodes
 func (m *Mesh)CheckKnownConnectionCosts() bool {
 	meshStatus := m.Status()
 	// If the mesh is empty we are done
@@ -257,6 +269,8 @@ func (m *Mesh)CheckKnownConnectionCosts() bool {
 	return true
 }
 
+// Waits for connections and routes to converge
+// TODO: Add a poll interval parameter
 func (m *Mesh)WaitForReady(timeout float64) error {
 	connectionsReady := m.CheckConnections()
 	for ;timeout > 0 && !connectionsReady; connectionsReady = m.CheckConnections() {

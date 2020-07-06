@@ -11,6 +11,8 @@ import (
 	_ "reflect"
 )
 
+// Test that a mesh starts and that connections are what we expect and that
+// each node's view of the mesh converges
 func TestNode(t *testing.T) {
 	testTable := []struct {
 		filename string
@@ -39,6 +41,7 @@ func TestNode(t *testing.T) {
 	}
 }
 
+// Test that a mesh starts and that connections are what we expect
 func TestLoadFromFile(t *testing.T) {
 	testTable := []struct {
 		filename string
@@ -67,10 +70,8 @@ func TestLoadFromFile(t *testing.T) {
 			data := YamlData {}
 
 			yaml.Unmarshal(yamlDat, &data)
-			// We need to sleep for a bit so connections can happen
-			timeout := 1000
 			connectionsReady := false
-			for ;timeout > 0 && !connectionsReady; connectionsReady = mesh.CheckConnections() {
+			for timeout := 1000 ;timeout > 0 && !connectionsReady; connectionsReady = mesh.CheckConnections() {
 				time.Sleep(100 * time.Millisecond)
 				timeout -= 100
 			}
@@ -87,6 +88,8 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 	data := YamlData {}
 	data.Nodes = make(map[string]*YamlNode)
 
+	// Generate a mesh where each node n is connected to only n+1 and n-1
+	// if they exist
 	for i := 0; i < totalNodes; i++ {
 		connections := make(map[string]float64)
 		nodeID := "Node" + string(i)
@@ -117,6 +120,9 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 		b.StopTimer()
 		for k, _ := range data.Nodes {
 			for _, listener := range data.Nodes[k].Listen {
+				// We have to reset our Addr to generate a new port for each
+				// run, otherwise we collide because we cant shutdown old
+				// meshes
 				listener.Addr = ""
 			}
 		}
