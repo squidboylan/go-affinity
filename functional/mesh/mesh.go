@@ -25,16 +25,22 @@ type Mesh struct {
 	MeshDefinition *YamlData
 }
 
+type YamlData struct {
+	Nodes map[string]*YamlNode
+}
+
 type YamlNode struct {
 	Connections map[string]float64
-	Listen string
+	Listen []*YamlListener
 	Name string
 	Stats_enable bool
 	Stats_port string
 }
 
-type YamlData struct {
-	Nodes map[string]*YamlNode
+type YamlListener struct {
+	Cost float64
+	Addr string
+	Protocol string
 }
 
 // Error handler that gets called for backend errors
@@ -63,6 +69,24 @@ func (n *Node) TCPListen(address string, cost float64) error {
 
 func (n *Node) TCPDial(address string, cost float64) error {
 	b1, err := backends.NewTCPDialer(address, true, nil)
+	if err != nil {
+		return err
+	}
+	n.NetceptorInstance.RunBackend(b1, cost, handleError)
+	return err
+}
+
+func (n *Node) UDPListen(address string, cost float64) error {
+	b1, err := backends.NewUDPListener(address)
+	if err != nil {
+		return err
+	}
+	n.NetceptorInstance.RunBackend(b1, cost, handleError)
+	return err
+}
+
+func (n *Node) UDPDial(address string, cost float64) error {
+	b1, err := backends.NewUDPDialer(address, true)
 	if err != nil {
 		return err
 	}
@@ -102,7 +126,11 @@ func NewMeshFromFile(filename string) Mesh {
 
 	MeshDefinition := YamlData {}
 
-	yaml.Unmarshal(yamlDat, &MeshDefinition)
+	err = yaml.Unmarshal(yamlDat, &MeshDefinition)
+	if err != nil {
+		fmt.Printf("%s", err)
+		os.Exit(1)
+	}
 
 	return NewMeshFromYaml(&MeshDefinition)
 }
@@ -112,28 +140,55 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 
 	for k := range MeshDefinition.Nodes {
 		node := NewNode(MeshDefinition.Nodes[k].Name)
-		if MeshDefinition.Nodes[k].Listen != "" {
-			err := node.TCPListen(MeshDefinition.Nodes[k].Listen, 1.0)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			
-		} else {
-			retries := 5
-			for retries > 0 {
-				port := utils.RandomPort()
-				addrString := "127.0.0.1:" + strconv.Itoa(port)
-				err := node.TCPListen(addrString, 1.0)
-				if err == nil {
-					MeshDefinition.Nodes[k].Listen = addrString
-					break
+		for _, listener := range MeshDefinition.Nodes[k].Listen {
+			if listener.Addr != "" {
+				if listener.Protocol == "tcp" {
+					err := node.TCPListen(listener.Addr, 1.0)
+					if err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					}
+				} else if listener.Protocol == "udp" {
+					err := node.UDPListen(listener.Addr, 1.0)
+					if err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					}
 				}
-				retries -= 1
-			}
-			if retries == 0 {
-				fmt.Println("Failed to conenct to a port after trying 5 times")
-				os.Exit(1)
+			} else {
+				if listener.Protocol == "tcp" {
+					retries := 5
+					for retries > 0 {
+						port := utils.RandomTCPPort()
+						addrString := "127.0.0.1:" + strconv.Itoa(port)
+						err := node.TCPListen(addrString, 1.0)
+						if err == nil {
+							listener.Addr = addrString
+							break
+						}
+						retries -= 1
+					}
+					if retries == 0 {
+						fmt.Println("Failed to conenct to a port after trying 5 times")
+						os.Exit(1)
+					}
+				} else if listener.Protocol == "udp" {
+					retries := 5
+					for retries > 0 {
+						port := utils.RandomUDPPort()
+						addrString := "127.0.0.1:" + strconv.Itoa(port)
+						err := node.UDPListen(addrString, 1.0)
+						if err == nil {
+							listener.Addr = addrString
+							break
+						}
+						retries -= 1
+					}
+					if retries == 0 {
+						fmt.Println("Failed to conenct to a port after trying 5 times")
+						os.Exit(1)
+					}
+				}
 			}
 		}
 		Nodes[MeshDefinition.Nodes[k].Name] = node
@@ -141,7 +196,12 @@ func NewMeshFromYaml(MeshDefinition *YamlData) Mesh {
 	for k := range MeshDefinition.Nodes {
 		node := Nodes[MeshDefinition.Nodes[k].Name]
 		for conn, cost := range MeshDefinition.Nodes[k].Connections {
-			node.TCPDial(MeshDefinition.Nodes[conn].Listen, cost)
+			// Update this to choose which listener to dial into
+			if MeshDefinition.Nodes[conn].Listen[0].Protocol == "tcp" {
+				node.TCPDial(MeshDefinition.Nodes[conn].Listen[0].Addr, cost)
+			} else if MeshDefinition.Nodes[conn].Listen[0].Protocol == "udp" {
+				node.UDPDial(MeshDefinition.Nodes[conn].Listen[0].Addr, cost)
+			}
 		}
 	}
 	return Mesh {

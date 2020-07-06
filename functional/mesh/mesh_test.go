@@ -17,9 +17,12 @@ func TestNode(t *testing.T) {
 	testTable := []struct {
 		filename string
 	} {
-		{"tree-mesh.yaml"},
-		{"random-mesh.yaml"},
-		{"flat-mesh.yaml"},
+		{"mesh-definitions/flat-mesh-tcp.yaml"},
+		{"mesh-definitions/random-mesh-tcp.yaml"},
+		{"mesh-definitions/tree-mesh-tcp.yaml"},
+		{"mesh-definitions/flat-mesh-udp.yaml"},
+		{"mesh-definitions/random-mesh-udp.yaml"},
+		{"mesh-definitions/tree-mesh-udp.yaml"},
 	}
 	t.Parallel()
 	for _, data := range testTable {
@@ -39,9 +42,12 @@ func TestLoadFromFile(t *testing.T) {
 	testTable := []struct {
 		filename string
 	} {
-		{"tree-mesh.yaml"},
-		{"random-mesh.yaml"},
-		{"flat-mesh.yaml"},
+		{"mesh-definitions/flat-mesh-tcp.yaml"},
+		{"mesh-definitions/random-mesh-tcp.yaml"},
+		{"mesh-definitions/tree-mesh-tcp.yaml"},
+		{"mesh-definitions/flat-mesh-udp.yaml"},
+		{"mesh-definitions/random-mesh-udp.yaml"},
+		{"mesh-definitions/tree-mesh-udp.yaml"},
 	}
 	t.Parallel()
 	for _, data := range testTable {
@@ -87,7 +93,13 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 		}
 		data.Nodes[nodeID] = &YamlNode {
 			Connections: connections,
-			Listen: "",
+			Listen: []*YamlListener {
+				&YamlListener {
+					Addr: "",
+					Cost: 1,
+					Protocol: "tcp",
+				},
+			},
 			Name: nodeID,
 			Stats_enable: false,
 			Stats_port: "",
@@ -101,7 +113,9 @@ func BenchmarkLinearMeshStartup(b *testing.B) {
 		// We probably dont need to stop the timer for this
 		b.StopTimer()
 		for k, _ := range data.Nodes {
-			data.Nodes[k].Listen = ""
+			for _, listener := range data.Nodes[k].Listen {
+				listener.Addr = ""
+			}
 		}
 		b.StartTimer()
 		mesh := NewMeshFromYaml(&data)
