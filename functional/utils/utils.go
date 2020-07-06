@@ -4,19 +4,29 @@ import (
 	"net"
 )
 
-func RandomTCPPort() int {
-	tcpPort, _ := net.Listen("tcp", ":0")
+func RandomTCPPort() (int, error) {
+	tcpPort, err := net.Listen("tcp", ":0")
+	if err != nil{
+		return 0, err
+	}
 	portNum := tcpPort.Addr().(*net.TCPAddr).Port
 
 	tcpPort.Close()
-	return portNum
+	return portNum, nil
 }
 
-func RandomUDPPort() int {
-	udpAddr, _ := net.ResolveUDPAddr("udp", ":0")
-	udpConn, _ := net.ListenUDP("udp", udpAddr)
+func RandomUDPPort() (int, error) {
+	udpAddr, err := net.ResolveUDPAddr("udp", ":0")
+	if err != nil{
+		return 0, err
+	}
+	udpConn, err := net.ListenUDP("udp", udpAddr)
+	if err != nil{
+		return 0, err
+	}
+
 	portNum := udpConn.LocalAddr().(*net.UDPAddr).Port
 
 	udpConn.Close()
-	return portNum
+	return portNum, nil
 }

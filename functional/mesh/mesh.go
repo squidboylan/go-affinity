@@ -155,9 +155,12 @@ func NewMeshFromYaml(MeshDefinition *YamlData) (*Mesh, error) {
 				retries := 5
 				if listener.Protocol == "tcp" {
 					for retries > 0 {
-						port := utils.RandomTCPPort()
+						port, err := utils.RandomTCPPort()
+						if err != nil{
+							return nil, err
+						}
 						addrString := "127.0.0.1:" + strconv.Itoa(port)
-						err := node.TCPListen(addrString, 1.0)
+						err = node.TCPListen(addrString, 1.0)
 						if err == nil {
 							listener.Addr = addrString
 							break
@@ -166,9 +169,12 @@ func NewMeshFromYaml(MeshDefinition *YamlData) (*Mesh, error) {
 					}
 				} else if listener.Protocol == "udp" {
 					for retries > 0 {
-						port := utils.RandomUDPPort()
+						port, err := utils.RandomUDPPort()
+						if err != nil{
+							return nil, err
+						}
 						addrString := "127.0.0.1:" + strconv.Itoa(port)
-						err := node.UDPListen(addrString, 1.0)
+						err = node.UDPListen(addrString, 1.0)
 						if err == nil {
 							listener.Addr = addrString
 							break
